@@ -1,0 +1,134 @@
+/* App.css */
+.app-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: monospace;
+  color: #333;
+}
+
+/* Modos y Cabecera */
+.mode-selector {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.btn-mode {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.btn-mode.inactive { background-color: #eee; color: #555; }
+.btn-mode.active { background-color: #333; color: #fff; }
+
+.status-header {
+  margin-bottom: 20px;
+  font-weight: bold;
+  font-size: 1.1rem;
+  text-align: center;
+}
+
+.dynamic-view {
+  min-height: 350px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Área de Drop & Inputs */
+.drop-zone {
+display: block; /* Necesario si se aplica a un botón */
+  width: 100%;
+  box-sizing: border-box; /* Previene desbordamientos */
+  border: 2px dashed #aaa;
+  background-color: #fafafa;
+  padding: 80px 20px;
+  text-align: center;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-size: 1.1rem;
+  color: #666;
+  font-family: inherit; /* Fuerza a usar monospace en botones nativos */
+}
+
+.drop-zone:hover { background-color: #f0f0f0; }
+
+.preview-img {
+  width: 100%;
+  max-height: 400px;
+  object-fit: contain;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  background-color: #000;
+}
+
+.video-container {
+  width: 100%;
+  border-radius: 8px;
+  border: 6px solid;
+  transition: border-color 0.3s ease;
+  background-color: #000;
+}
+
+.video-warning { border-color: #ffc107; }
+.video-success { border-color: #28a745; }
+
+.scan-feedback {
+  text-align: center;
+  margin-top: 12px;
+  font-weight: bold;
+}
+
+/* Botones de Acción */
+.btn-action {
+  width: 100%;
+  padding: 15px;
+  font-size: 1.1rem;
+  font-family: inherit;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: auto;
+}
+
+.btn-primary { background-color: #007bff; color: #fff; }
+.btn-secondary { background-color: #e0e0e0; color: #333; margin-top: 30px; }
+.btn-huge { padding: 40px; font-size: 1.2rem; }
+
+/* Resultados */
+.results-grid {
+  display: flex;
+  justify-content: space-evenly;
+  flex-wrap: wrap;
+  gap: 15px;
+  width: 100%;
+}
+
+.result-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.result-thumb {
+  width: 90px;
+  height: 90px;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.result-data {
+  font-size: 0.85rem;
+  font-weight: bold;
+  margin-top: 8px;
+  color: #333;
+}
