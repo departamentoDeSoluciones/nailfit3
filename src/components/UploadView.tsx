@@ -1,54 +1,21 @@
-interface Props {
-  imagePreview: string | null;
-  onPreviewReady: (src: string) => void;
-  onAnalyze: () => void;
-}
-
-export default function UploadView({
-  imagePreview,
-  onPreviewReady,
-  onAnalyze,
-}: Props) {
-  if (!imagePreview) {
-    return (
-      <div
-        className="drop-zone"
-        onDrop={e => {
-          e.preventDefault();
-
-          const file = e.dataTransfer.files[0];
-
-          if (!file) return;
-
-          const reader = new FileReader();
-
-          reader.onload = ev => {
-            onPreviewReady(ev.target?.result as string);
-          };
-
-          reader.readAsDataURL(file);
-        }}
-        onDragOver={e => e.preventDefault()}
-      >
-        Suelta tu imagen aquí 📥
-      </div>
-    );
-  }
-
+import { Menu } from './ui/Menu';
+import { TopBar } from './ui/TopBar'
+import { DropBox } from './ui/DropBox';
+import { Form } from './ui/Form'
+export const UploadView = () => {
   return (
     <div>
-      <img
-        src={imagePreview}
-        className="preview-img"
-        alt="Preview"
-      />
-
-      <button
-        className="drop-zone"
-        onClick={onAnalyze}
+      <TopBar />
+      <DropBox />
+      <Menu />
+      <Form buttonText="Confirmar"
+        onSubmit={(e) => e.preventDefault()}
+        onButtonClick={console.log("hey")}
       >
-        ⚙️ Analizar Ahora
-      </button>
+        <Form.Input label="Nombre completo" placeholder="Juan Pérez" />
+        <Form.Input label="Correo" type="email" placeholder="juan@mail.com" />
+      </Form>
     </div>
-  );
+
+  )
 }

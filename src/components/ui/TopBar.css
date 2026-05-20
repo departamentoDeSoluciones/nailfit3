@@ -1,0 +1,31 @@
+.bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--red-deep); 
+  padding: 1rem 1.2rem;
+  background: linear-gradient(to bottom, var(--pink-light), transparent);
+}
+.logo {
+  font-family: var(--display);
+  font-weight: bold;
+}
+.logo h1{
+  color : var(--red-deep)
+}
+.bar-actions {
+  display: flex;
+  gap: 2rem; /* Separa los íconos uniformemente */
+  align-items: center;
+}
+.bar-icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.25rem;
+  padding: 0.5rem;
+  transition: transform 0.2s ease;
+}
+.bar-icon-btn:hover {
+  transform: translateY(-2px); /* Animación sutil al pasar el mouse */
+}

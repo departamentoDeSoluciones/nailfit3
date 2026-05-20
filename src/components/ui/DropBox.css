@@ -1,0 +1,28 @@
+.dropbox{
+  height:50vh;
+  width: 50vw;
+  background: var(--red);
+  border: 4px solid var(--pink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+.dropbox p {
+  color: var(--cream);
+}
+.dropbox.dragging{
+  background: var(--cream);
+  color: var(--red);
+  border: 4px dashed var(--pink)
+}
+.dropbox.dragging p {
+color: var(--pink);
+}
+.done-confetti {
+  display: flex;
+  justify-content: center;
+  gap: 0.8rem;
+  margin-bottom: 2rem;
+}

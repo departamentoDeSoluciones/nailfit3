@@ -1,0 +1,26 @@
+.input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+.input-label {
+  font-family: var(--serif);
+  color: var(--black);
+}
+
+.input-field {
+  /* Se usa cream como "blanco" del sistema, o #FFF para mayor contraste */
+  background: var(--cream); 
+  border: 2px dashed var(--pink);
+  color: var(--black);
+  font-family: var(--serif);
+  padding: 1rem;
+  font-size: 1rem;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.input-field:focus {
+  border: 2px solid var(--red);
+}

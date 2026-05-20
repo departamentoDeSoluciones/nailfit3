@@ -1,0 +1,9 @@
+.menu-container {
+  display: flex;
+  flex: 1;
+  height : 100%;
+  width: 100%;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
+}

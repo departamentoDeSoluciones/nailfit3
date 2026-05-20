@@ -1,0 +1,20 @@
+
+.btn-start {
+  display: flex;
+  width: 100%;
+  background: var(--red);
+  color: var(--cream);
+  font-family: var(--display);
+  letter-spacing: 0.18em;
+  padding: 2rem;
+  border: none;
+  cursor: pointer;
+  border: 4px solid var(--pink);
+  transition: all 0.3s ease;
+}
+
+.btn-start:hover {
+  background: var(--cream);
+  color: var(--red);
+  border: 4px dashed var(--pink)
+}
