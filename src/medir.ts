@@ -1,41 +1,16 @@
-import cv from '@techstark/opencv-js';
-import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
-export interface ResultadoTalla {
-  nombreDedo: string;
-  anchoCm: number;
-  altoCm: number;
-  talla: string;
-}
+import cv from "@techstark/opencv-js";
+import { FilesetResolver, HandLandmarker } from "@mediapipe/tasks-vision";
+import type {
+  ResultadoTalla,
+  MedicionMoneda,
+  ResultadoProcesamiento,
+  MedicionUna,
+} from "./types/types";
 export enum EstadoDeteccion {
   NADA = 0,
   MANO = 1,
   MONEDA = 2,
-  AMBAS = 3
-}
-export interface MedicionMoneda {
-  encontrada: boolean;
-  radioPixeles: number;
-  centroX: number;
-  centroY: number;
-  imagenBase64: string | null;
-}
-
-export interface ResultadoProcesamiento {
-  imagenesBase64: string[];
-  medidas: MedicionUna[];
-  moneda: MedicionMoneda; // Se inyecta al orquestador principal
-}
-export interface MedicionUna {
-  indiceDedo: number;
-  anchoPixeles: number;
-  altoPixeles: number;
-  areaPixeles: number;
-  valido: boolean;
-}
-
-export interface ResultadoProcesamiento {
-  imagenesBase64: string[];
-  medidas: MedicionUna[];
+  AMBAS = 3,
 }
 
 class medir {
@@ -47,18 +22,19 @@ class medir {
     this.isInitializing = true;
     try {
       const vision = await FilesetResolver.forVisionTasks(
-        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm",
       );
       this.handLandmarker = await HandLandmarker.createFromOptions(vision, {
         baseOptions: {
-          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
-          delegate: "GPU"
+          modelAssetPath:
+            "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+          delegate: "GPU",
         },
         runningMode: "IMAGE",
-        numHands: 1
+        numHands: 1,
       });
       await new Promise<void>((resolve) => {
-        if (typeof cv.getBuildInformation === 'function') {
+        if (typeof cv.getBuildInformation === "function") {
           this.isReady = true;
           resolve();
         } else {
@@ -85,10 +61,10 @@ class medir {
     const height = img.naturalHeight;
     const dedos = [
       { dip: 3, tip: 4 }, // Pulgar
-      { dip: 7, tip: 8 },   // Índice
+      { dip: 7, tip: 8 }, // Índice
       { dip: 11, tip: 12 }, // Medio
       { dip: 15, tip: 16 }, // Anular
-      { dip: 19, tip: 20 }  // Meñique
+      { dip: 19, tip: 20 }, // Meñique
     ];
     const mano = results.landmarks[0];
     let dedosValidos = 0;
@@ -112,14 +88,14 @@ class medir {
       const boxSize = distancia * 1.55;
       const halfBox = boxSize / 2;
 
-      // Desplazar el centro del recorte ligeramente hacia abajo (hacia el nudillo) 
+      // Desplazar el centro del recorte ligeramente hacia abajo (hacia el nudillo)
       // para asegurar que toda la base de la uña (cutícula) entre en el cuadro.
       const cx = pxTipX;
-      const cy = pxTipY + (distancia * 0.40);
+      const cy = pxTipY + distancia * 0.4;
 
       // Coordenadas de la esquina superior izquierda
-      let rx = Math.max(0, cx - halfBox);
-      let ry = Math.max(0, cy - halfBox);
+      const rx = Math.max(0, cx - halfBox);
+      const ry = Math.max(0, cy - halfBox);
       let rw = boxSize;
       let rh = boxSize;
 
@@ -140,7 +116,6 @@ class medir {
     console.log(`Dedos válidos detectados: ${dedosValidos}`);
     src.delete();
     return roiMat;
-
   }
 
   public procesarDedos(arrayDeUnas: any[]): any[] {
@@ -168,14 +143,21 @@ class medir {
         cv.bilateralFilter(gray, blurred, 9, 75, 75, cv.BORDER_DEFAULT);
 
         // 4. Umbralización adaptativa (INV para que la uña sea blanca y fondo negro)
-        cv.adaptiveThreshold(blurred, thresh, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 11, 2);
+        cv.adaptiveThreshold(
+          blurred,
+          thresh,
+          255,
+          cv.ADAPTIVE_THRESH_GAUSSIAN_C,
+          cv.THRESH_BINARY_INV,
+          11,
+          2,
+        );
 
         // 5. Cierre morfológico
         cv.morphologyEx(thresh, morph, cv.MORPH_CLOSE, kernel);
 
         // 6. Guardar clon en el array de salida
         unasProcesadas.push(morph.clone());
-
       } catch (error) {
         console.error(`Error procesando recorte del dedo ${i}:`, error);
       } finally {
@@ -192,42 +174,30 @@ class medir {
     return unasProcesadas;
   }
 
-
-  public async procesarMano(fotoDeMano: HTMLImageElement): Promise<ResultadoProcesamiento | null> {
-    // A. Buscar moneda independientemente
-    const datosMoneda = this.encontrarMoneda(fotoDeMano);
-
-    // B. Buscar mano
+  public async procesarMano(
+    fotoDeMano: HTMLImageElement,
+    datosMoneda: MedicionMoneda,
+  ): Promise<ResultadoProcesamiento | null> {
     const roisCrudosMat = await this.capturarDedos(fotoDeMano);
     if (!roisCrudosMat || roisCrudosMat.length === 0) return null;
 
     const roisProcesadosMat = this.procesarDedos(roisCrudosMat);
-    const medidasJSON = this.medirUnasPixeles(roisProcesadosMat);
-
-    const imagenesBase64: string[] = [];
-    const offScreenCanvas = document.createElement('canvas');
-
-    for (const procMat of roisProcesadosMat) {
-      if (procMat && !procMat.isDeleted()) {
-        cv.imshow(offScreenCanvas, procMat);
-        imagenesBase64.push(offScreenCanvas.toDataURL('image/jpeg', 0.9));
-        procMat.delete();
-      }
-    }
-
+    const medidasJSON: MedicionUna[] = this.medirUnasPixeles(roisProcesadosMat);
     for (const rawMat of roisCrudosMat) {
       if (rawMat && !rawMat.isDeleted()) rawMat.delete();
     }
-
-    // C. Ensamblar output
+    for (const rawMats of roisProcesadosMat) {
+      if (rawMats && !rawMats.isDeleted()) rawMats.delete();
+    }
     return {
-      imagenesBase64: imagenesBase64,
       medidas: medidasJSON,
-      moneda: datosMoneda
+      moneda: datosMoneda,
     };
   }
 
-  public async detectarManoRapido(imgOrigen: HTMLVideoElement | HTMLCanvasElement | HTMLImageElement): Promise<boolean> {
+  public async detectarManoRapido(
+    imgOrigen: HTMLVideoElement | HTMLCanvasElement | HTMLImageElement,
+  ): Promise<boolean> {
     if (!this.handLandmarker) throw new Error("MediaPipe no inicializado");
     const results = await this.handLandmarker.detect(imgOrigen);
     return results && results.landmarks && results.landmarks.length > 0;
@@ -245,7 +215,13 @@ class medir {
         cv.findContours(src, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
 
         if (contours.size() === 0) {
-          resultados.push({ indiceDedo: i, anchoPixeles: 0, altoPixeles: 0, areaPixeles: 0, valido: false });
+          resultados.push({
+            indiceDedo: i,
+            anchoPixeles: 0,
+            altoPixeles: 0,
+            areaPixeles: 0,
+            valido: false,
+          });
           continue;
         }
 
@@ -262,7 +238,7 @@ class medir {
           }
         }
 
-        // 3. Obtener distancias 
+        // 3. Obtener distancias
         const rect = cv.boundingRect(mejorContorno);
 
         resultados.push({
@@ -270,12 +246,17 @@ class medir {
           anchoPixeles: rect.width,
           altoPixeles: rect.height,
           areaPixeles: mayorArea,
-          valido: true
+          valido: true,
         });
-
       } catch (error) {
         console.error(`Error midiendo el dedo ${i}:`, error);
-        resultados.push({ indiceDedo: i, anchoPixeles: 0, altoPixeles: 0, areaPixeles: 0, valido: false });
+        resultados.push({
+          indiceDedo: i,
+          anchoPixeles: 0,
+          altoPixeles: 0,
+          areaPixeles: 0,
+          valido: false,
+        });
       } finally {
         // 4. Destruir los vectores de memoria obligatoriamente
         if (contours && !contours.isDeleted()) contours.delete();
@@ -286,31 +267,12 @@ class medir {
     return resultados;
   }
 
-  public async conseguirCaptura(video: HTMLVideoElement, canvasEscaner: HTMLCanvasElement): Promise<EstadoDeteccion> {
-    if (!this.handLandmarker || video.videoWidth === 0) return EstadoDeteccion.NADA;
-
-    // 1. Extraer el fotograma actual del video
-    canvasEscaner.width = video.videoWidth;
-    canvasEscaner.height = video.videoHeight;
-    const ctx = canvasEscaner.getContext('2d');
-    ctx?.drawImage(video, 0, 0, canvasEscaner.width, canvasEscaner.height);
-
-    // 2. Ejecutar detecciones en paralelo para mayor velocidad
-    const [hayMano, datosMoneda] = await Promise.all([
-      this.detectarManoRapido(canvasEscaner),
-      Promise.resolve(this.encontrarMoneda(canvasEscaner)) // Envolvemos la síncrona
-    ]);
-
-    // 3. Calcular estado ponderado
-    let estado = 0;
-    if (hayMano) estado += 1;
-    if (datosMoneda.encontrada) estado += 2;
-
-    return estado;
-  }
-  public encontrarMoneda(origen: HTMLImageElement | HTMLCanvasElement | any): MedicionMoneda {
+  public encontrarMoneda(origen: HTMLImageElement | HTMLCanvasElement | null): MedicionMoneda {
     const resultadoNulo: MedicionMoneda = {
-      encontrada: false, radioPixeles: 0, centroX: 0, centroY: 0, imagenBase64: null
+      encontrada: false,
+      radioPixeles: 0,
+      centroX: 0,
+      centroY: 0,
     };
 
     let src = new cv.Mat();
@@ -351,10 +313,6 @@ class medir {
         const rect = new cv.Rect(Math.floor(rx), Math.floor(ry), Math.floor(rw), Math.floor(rh));
         const roi = src.roi(rect);
 
-        const canvas = document.createElement('canvas');
-        cv.imshow(canvas, roi);
-        const base64 = canvas.toDataURL('image/jpeg', 0.9);
-
         roi.delete();
 
         return {
@@ -362,12 +320,10 @@ class medir {
           radioPixeles: r,
           centroX: x,
           centroY: y,
-          imagenBase64: base64
         };
       }
 
       return resultadoNulo;
-
     } catch (error) {
       console.error("Error buscando moneda:", error);
       return resultadoNulo;
@@ -378,7 +334,6 @@ class medir {
       if (isSrcLocal && !src.isDeleted()) src.delete();
     }
   }
-
 
   public pxACM(medidasDedos: MedicionUna[], moneda: MedicionMoneda): ResultadoTalla[] {
     if (!moneda.encontrada || moneda.radioPixeles <= 0) {
@@ -415,10 +370,39 @@ class medir {
         nombreDedo: nombresDedos[dedo.indiceDedo] || `Dedo ${dedo.indiceDedo}`,
         anchoCm: parseFloat(anchoCm.toFixed(2)),
         altoCm: parseFloat(altoCm.toFixed(2)),
-        talla: talla
+        talla: talla,
       });
     }
     return resultados;
+  }
+
+  public async analizarTallas(imagen: HTMLImageElement): Promise<ResultadoTalla[] | null> {
+    // 1. Validar presencia de mano
+    const hayMano = await this.detectarManoRapido(imagen);
+    if (!hayMano) {
+      console.warn("Abortado: No se detectó mano.");
+      return null;
+    }
+
+    // 2. Validar presencia de moneda
+    const datosMoneda = this.encontrarMoneda(imagen);
+    if (!datosMoneda.encontrada) {
+      console.warn("Abortado: No se detectó moneda de referencia.");
+      return null;
+    }
+
+    // 3. Procesar y extraer medidas (si ambos existen)
+    const resultadoProcesamiento = await this.procesarMano(imagen, datosMoneda);
+    if (!resultadoProcesamiento) {
+      console.warn("Abortado: Fallo en el procesamiento de los dedos.");
+      return null;
+    }
+
+    // 4. Calcular tallas e imprimir en consola
+    const tallasFinales = this.pxACM(resultadoProcesamiento.medidas, datosMoneda);
+    console.log("Resultados de medición completados:", tallasFinales);
+
+    return tallasFinales;
   }
 }
 export const Medir = new medir();

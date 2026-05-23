@@ -1,24 +1,27 @@
 .input-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  width: 100%;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
 }
 .input-label {
+  font-size: var(--text-p);
   font-family: var(--serif);
   color: var(--black);
 }
 
 .input-field {
-  /* Se usa cream como "blanco" del sistema, o #FFF para mayor contraste */
-  background: var(--cream); 
+  background: var(--cream);
   border: 2px dashed var(--pink);
   color: var(--black);
   font-family: var(--serif);
   padding: 1rem;
-  font-size: 1rem;
+  font-size: var(--text-p);
+  width: 100%;
+  height: 100%;
   outline: none;
-  transition: all 0.3s ease;
+  transition: all 0.8s ease;
 }
 
 .input-field:focus {

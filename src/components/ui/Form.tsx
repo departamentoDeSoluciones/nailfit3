@@ -1,34 +1,28 @@
-import { InputField } from './InputField';
-import { Button } from './Button';
-import './Form.css';
-
+import { InputField } from "./InputField";
+import { Button } from "./Button";
+import "./Form.css";
 interface FormProps extends React.FormHTMLAttributes<HTMLFormElement> {
   children: React.ReactNode;
-  buttonText?: string;         // Texto personalizado para el botón
-  onButtonClick?: () => void;  // Acción del botón
+  buttonText?: string; // Texto personalizado para el botón
+  onButtonClick?: () => void; // Acción del botón
 }
-
-// Tipo explícito para permitir subcomponentes
 type FormComponent = React.FC<FormProps> & {
   Input: typeof InputField;
 };
-
 export const Form: FormComponent = ({
   children,
   buttonText = "ENVIAR",
-  onButtonClick = () => { },
+  onButtonClick = () => {},
   ...props
 }) => {
   return (
     <form className="form-container" {...props}>
       {children}
       {/* El botón ya está integrado internamente */}
-      <Button onClick={onButtonClick}>
-        {buttonText}
-      </Button>
+      <div className="button-wrapper">
+        <Button onClick={onButtonClick}>{buttonText}</Button>
+      </div>
     </form>
   );
 };
-
-// Vinculación para llamar como <Form.Input /> sin importarlo aparte
 Form.Input = InputField;

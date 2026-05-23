@@ -1,9 +1,9 @@
-import { UploadView } from './components/UploadView';
-import './App.css';
+import { Components } from "./components/Components";
+import "./App.css";
 function App() {
   return (
     <div className="app-container">
-      <UploadView />
+      <Components />
     </div>
   );
 }

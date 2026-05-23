@@ -1,22 +1,68 @@
 :root {
-  --cream: #F5E9E2;
-  --beige: #EAD7CF;
-  --red: #C1121F;
-  --red-deep: #7A0C14;
-  --pink: #D36A7B;
-  --pink-light: #F2A7B3;
-  --black: #1C1C1C;
-  --gray: #8A8A8A;
-  --serif: 'Cormorant Garamond', serif;
-  --display: 'Playfair Display', serif;
-  --script: 'Great Vibes', cursive;
+  --cream: #f5e9e2;
+  --beige: #ead7cf;
+  --red: #c1121f;
+  --red-deep: #7a0c14;
+  --pink: #d36a7b;
+  --pink-light: #f2a7b3;
+  --black: #1c1c1c;
+  --gray: #8a8a8a;
+  --serif: "Cormorant Garamond", serif;
+  --display: "Playfair Display", serif;
+  --script: "Great Vibes", cursive;
+  /* Escala Tipográfica (Tamaños en rem) */
+  --text-h1: 6rem;
+  --text-h2: 4rem;
+  --text-h3: 3rem;
+  --text-h4: 2.25rem;
+  --text-p: 1rem;
+
+  /* Espaciado de letras (Letter Spacing: % convertido a em) */
+  --tracking-h1: 0.04em;
+  --tracking-h2: 0.06em;
+  --tracking-h3: 0.08em;
+  --tracking-h4: -0.06em;
+  --tracking-p: -0.06em;
+
+  /* Pesos Tipográficos (Font Weights) */
+  --fw-extralight: 200;
+  --fw-regular: 400;
+  --fw-semibold: 600;
 }
-body { 
-background: var(--cream); 
-font-family: var(--serif); 
-overflow: hidden; 
-height: 100vh; 
-width: 100vw; }
+
+body {
+  background: var(--cream);
+  font-family: var(--serif);
+  overflow-y: auto;
+  height: 100vh;
+  width: 100vw;
+}
+
+h1 {
+  font-size: var(--text-h1);
+  letter-spacing: var(--tracking-h1);
+}
+
+h2 {
+  font-size: var(--text-h2);
+  letter-spacing: var(--tracking-h2);
+}
+
+h3 {
+  font-size: var(--text-h3);
+  letter-spacing: var(--tracking-h3);
+}
+
+h4 {
+  font-size: var(--text-h4);
+  letter-spacing: var(--tracking-h4);
+}
+
+p {
+  font-size: var(--text-p);
+  letter-spacing: var(--tracking-p);
+}
+
 .app-container {
   display: flex;
   flex-direction: column;
