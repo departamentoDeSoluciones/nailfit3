@@ -5,7 +5,8 @@ import { ResultsView } from "./ResultsView";
 import { useState, useEffect } from "react";
 import { useRecognitionEngine } from "../hooks/useRecognitionEngine";
 export const MainUI = () => {
-  const { clearError, ejecutarAnalisis, uiState, errorMessage, tallas } = useRecognitionEngine();
+  const { clearError, ejecutarAnalisis, uiState, errorMessage, tallas, resetFlow } =
+    useRecognitionEngine();
   const [isReady, setIsReady] = useState<HTMLImageElement | null>(null);
   const showButton = isReady && uiState !== "LOADING" && uiState !== "ANALYZING";
   const handleCloseError = () => {
@@ -14,12 +15,9 @@ export const MainUI = () => {
   };
 
   useEffect(() => {
-    // 1. Apaga la restauración automática del navegador
     if ("scrollRestoration" in window.history) {
       window.history.scrollRestoration = "manual";
     }
-
-    // 2. Obliga a renderizar desde el pixel 0,0
     window.scrollTo(0, 0);
   }, []);
 
@@ -29,7 +27,15 @@ export const MainUI = () => {
     }
   }, [uiState, errorMessage]);
   if (uiState === "DONE") {
-    return <ResultsView medidas={tallas} />;
+    return (
+      <ResultsView
+        medidas={tallas}
+        onReset={() => {
+          resetFlow();
+          setIsReady(null);
+        }}
+      />
+    );
   }
   return (
     <div className="master-container">

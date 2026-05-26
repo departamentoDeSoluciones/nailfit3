@@ -33,8 +33,8 @@ export function useRecognitionEngine() {
         const res = await Medir.analizarTallas(img);
         setTallas(res);
         setUiState("DONE");
-      } catch {
-        setErrorMessage("No se pudo procesar la imagen");
+      } catch (error: any) {
+        setErrorMessage(error.message || "No se pudo procesar la imagen");
         setUiState("ERROR");
       }
     };

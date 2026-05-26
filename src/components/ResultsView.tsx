@@ -7,25 +7,23 @@ import { useState } from "react";
 
 interface MeasurementsTableProps {
   medidas: ResultadoTalla[];
+  onReset: () => void;
 }
 
-export const ResultsView: React.FC<MeasurementsTableProps> = ({ medidas = [] }) => {
+export const ResultsView: React.FC<MeasurementsTableProps> = ({ medidas = [], onReset }) => {
   const [nombre, setNombre] = useState("");
   const [contacto, setContacto] = useState("");
 
   const handleGuardarCliente = () => {
     const payloadCliente: RegistroCliente = {
-      id: crypto.randomUUID(), // Genera un ID único estandarizado
+      id: crypto.randomUUID(),
       nombreCompleto: nombre,
       usuarioIg: contacto,
-      fechaMedicion: new Date().toISOString(), // Fecha ISO 8601 estandar
-      medidas: medidas, // Prop delegada del orquestador principal
+      fechaMedicion: new Date().toISOString(),
+      medidas: medidas,
     };
-
-    // 3. Resultado final en consola listo para copiar o enviar a DB
     console.log("JSON Listo:", JSON.stringify(payloadCliente, null, 2));
   };
-
   return (
     <div className="master-container">
       <div className="done-confetti">
@@ -38,10 +36,6 @@ export const ResultsView: React.FC<MeasurementsTableProps> = ({ medidas = [] }) 
 
         <h1>✨</h1>
       </div>
-
-      {/* Columna Izquierda: Celebración y Captura */}
-
-      {/* Columna Derecha: Datos y Exportación */}
       <div className="layout-panel">
         <ResultsTable medidas={medidas} />
 
@@ -62,8 +56,8 @@ export const ResultsView: React.FC<MeasurementsTableProps> = ({ medidas = [] }) 
           </Form>
         </div>
       </div>
-
       <Button onClick={() => console.log("trying")}>⬇ Exportar como Imagen</Button>
+      <Button onClick={onReset}> Nueva Captura </Button>
     </div>
   );
 };
