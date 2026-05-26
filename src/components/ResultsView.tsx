@@ -1,34 +1,31 @@
-import React from "react";
-import { useState } from "react";
 import { Form } from "./ui/Form";
 import { ResultsTable } from "./ui/ResultsTable";
 import { Button } from "./ui/Button";
-import type { ResultadoTalla } from "../medir";
+import type { ResultadoTalla, RegistroCliente } from "../types/types";
 import "./ResultsView.css";
-export const useMockMedidas = () => {
-  const [mockMedidas, setMockMedidas] = useState<ResultadoTalla[]>([]);
-  const testData = () => {
-    const datosFalsos: ResultadoTalla[] = [
-      { nombreDedo: "Pulgar", anchoCm: 1.85, altoCm: 2.1, talla: "0" },
-      { nombreDedo: "Índice", anchoCm: 1.35, altoCm: 1.6, talla: "4" },
-      { nombreDedo: "Medio", anchoCm: 1.45, altoCm: 1.7, talla: "3" },
-      { nombreDedo: "Anular", anchoCm: 1.3, altoCm: 1.55, talla: "5" },
-      { nombreDedo: "Meñique", anchoCm: 1.1, altoCm: 1.3, talla: "7" },
-    ];
-    setMockMedidas(datosFalsos);
-  };
-
-  const limpiarDatos = () => {
-    setMockMedidas([]);
-  };
-  return { mockMedidas, testData, limpiarDatos };
-};
+import { useState } from "react";
 
 interface MeasurementsTableProps {
   medidas: ResultadoTalla[];
 }
 
 export const ResultsView: React.FC<MeasurementsTableProps> = ({ medidas = [] }) => {
+  const [nombre, setNombre] = useState("");
+  const [contacto, setContacto] = useState("");
+
+  const handleGuardarCliente = () => {
+    const payloadCliente: RegistroCliente = {
+      id: crypto.randomUUID(), // Genera un ID único estandarizado
+      nombreCompleto: nombre,
+      usuarioIg: contacto,
+      fechaMedicion: new Date().toISOString(), // Fecha ISO 8601 estandar
+      medidas: medidas, // Prop delegada del orquestador principal
+    };
+
+    // 3. Resultado final en consola listo para copiar o enviar a DB
+    console.log("JSON Listo:", JSON.stringify(payloadCliente, null, 2));
+  };
+
   return (
     <div className="master-container">
       <div className="done-confetti">
@@ -46,33 +43,24 @@ export const ResultsView: React.FC<MeasurementsTableProps> = ({ medidas = [] }) 
 
       {/* Columna Derecha: Datos y Exportación */}
       <div className="layout-panel">
-        <ResultsTable>
-          <thead>
-            <tr>
-              <th>Dedo</th>
-              <th>Medida</th>
-              <th>Talla</th>
-            </tr>
-          </thead>
-          <tbody>
-            {medidas?.map((item, index) => (
-              <tr key={index}>
-                <td className="finger-name">{item.nombreDedo}</td>
-                <td className="finger-value">{item.anchoCm} cm</td>
-                <td className="finger-size font-bold">{item.talla}</td>
-              </tr>
-            ))}
-          </tbody>
-        </ResultsTable>
+        <ResultsTable medidas={medidas} />
 
         <div className="form-contenedor">
-          <Form buttonText="Guardar Cliente">
-            <Form.Input label="Nombre completo" placeholder="Ej. Amaranta" />
-            <Form.Input label="Contacto / IG" placeholder="@usuario" />
+          <Form buttonText="Guardar Cliente" onButtonClick={handleGuardarCliente}>
+            <Form.Input
+              label="Nombre completo"
+              placeholder="Ej. Amaranta"
+              value={nombre}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNombre(e.target.value)}
+            />
+            <Form.Input
+              label="Contacto / IG"
+              placeholder="@usuario"
+              value={contacto}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setContacto(e.target.value)}
+            />
           </Form>
         </div>
-
-        {/* Mockup de botón de exportación */}
       </div>
 
       <Button onClick={() => console.log("trying")}>⬇ Exportar como Imagen</Button>

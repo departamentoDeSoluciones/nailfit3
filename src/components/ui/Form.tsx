@@ -15,12 +15,15 @@ export const Form: FormComponent = ({
   onButtonClick = () => {},
   ...props
 }) => {
+  const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault(); // Bloquea el refresh automático
+    onButtonClick(); // Ejecuta tu recolección de JSON
+  };
   return (
-    <form className="form-container" {...props}>
+    <form className="form-container" {...props} onSubmit={handleFormSubmit}>
       {children}
-      {/* El botón ya está integrado internamente */}
       <div className="button-wrapper">
-        <Button onClick={onButtonClick}>{buttonText}</Button>
+        <Button>{buttonText}</Button>
       </div>
     </form>
   );

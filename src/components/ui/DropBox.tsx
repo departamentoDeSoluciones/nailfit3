@@ -1,14 +1,30 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { DragEvent } from "react";
 import "./DropBox.css";
+import type { UIState } from "../../types/types";
 
 interface DropBoxProps {
   onImageReady: (imageElement: HTMLImageElement) => void;
+  uiState: UIState;
 }
 
-export const DropBox = ({ onImageReady }: DropBoxProps) => {
+export const DropBox = ({ onImageReady, uiState }: DropBoxProps) => {
   const [isDragging, setIsDragging] = useState(false);
-  const [imgSrc, setImgSrc] = useState<string | undefined>(undefined);
+  const [imgSrc, setImgSrc] = useState<string | null>(null);
+  const getStatusText = () => {
+    if (uiState === "ERROR") return "Error en el motor ⚠️";
+    if (uiState === "LOADING") return "Iniciando motor ⏳";
+    if (uiState === "ANALYZING") return "Analizando imagen 🔍";
+    if (imgSrc) return "Imagen lista para procesar 📊";
+    return "Arrastra imagen aca 📥";
+  };
+
+  useEffect(() => {
+    if (uiState === "IDLE") {
+      setImgSrc(null);
+      setIsDragging(false);
+    }
+  }, [uiState]);
 
   const handleDragEnter = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -58,7 +74,7 @@ export const DropBox = ({ onImageReady }: DropBoxProps) => {
       className={`dropbox ${isDragging ? "dragging" : ""} ${imgSrc ? "loaded" : ""}`}
       onDragLeave={handleDragLeave}
     >
-      <p>{imgSrc ? "Imagen lista para procesar  📊 " : "Arrastra imagen aca 📥"}</p>
+      <p>{getStatusText()}</p>
     </div>
   );
 };

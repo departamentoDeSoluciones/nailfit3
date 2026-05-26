@@ -26,22 +26,23 @@ export function useRecognitionEngine() {
 
   const ejecutarAnalisis = async (src: string) => {
     setUiState("ANALYZING");
-
     const img = new Image();
     img.src = src;
-
     img.onload = async () => {
-      const res = await Medir.analizarTallas(img);
-      if (!res) {
+      try {
+        const res = await Medir.analizarTallas(img);
+        setTallas(res);
+        setUiState("DONE");
+      } catch {
         setErrorMessage("No se pudo procesar la imagen");
         setUiState("ERROR");
-        return;
       }
-      setTallas(res);
-      setUiState("DONE");
     };
   };
 
+  const clearError = () => {
+    setUiState("IDLE");
+  };
   return {
     uiState,
     ejecutarAnalisis,
@@ -50,5 +51,6 @@ export function useRecognitionEngine() {
     errorMessage,
     resetFlow,
     tallas,
+    clearError,
   };
 }

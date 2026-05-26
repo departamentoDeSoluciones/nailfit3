@@ -1,37 +1,4 @@
 :root {
-  /* Paleta */
-  --black: #1F1F1F;
-  --white: #FDFFF8;
-  --light-grey: #C2C2C2;
-  --dark-gray: #7B7B7B;
-  --pink: #FF888A;
-  --orange: #FF5E1C;
-
-  /* Tipografía - Familias y Pesos */
-  --font-family-main: 'Roboto Serif', serif;
-  --font-weight-extralight: 200;
-  --font-weight-regular: 400;
-  --font-weight-semibold: 600;
-
-  /* Tipografía - Body */
-  --p-size: 2rem;
-  --p-spacing: -0.06em;
-  --p-margin: 0;
-
-  /* Tipografía - Titulares */
-  --h1-size: 6rem;
-  --h1-spacing: 0.04em;
-  
-  --h2-size: 4rem;
-  --h2-spacing: 0.06em;
-  
-  --h3-size: 3rem;
-  --h3-spacing: 0.08em;
-  
-  --h4-size: 2.25rem;
-  --h4-spacing: -0.06em;
-
-  /* UI (Botones y Barras de Progreso) */
-  --ui-border-weight: 4px;
-  --ui-border-radius: 20px;
+  --black: #1f1f1f;
+  --white: #fdfff8;
 }

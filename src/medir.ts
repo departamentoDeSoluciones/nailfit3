@@ -376,28 +376,20 @@ class medir {
     return resultados;
   }
 
-  public async analizarTallas(imagen: HTMLImageElement): Promise<ResultadoTalla[] | null> {
+  public async analizarTallas(imagen: HTMLImageElement): Promise<ResultadoTalla[]> {
     // 1. Validar presencia de mano
     const hayMano = await this.detectarManoRapido(imagen);
-    if (!hayMano) {
-      console.warn("Abortado: No se detectó mano.");
-      return null;
-    }
+    if (!hayMano) throw new Error("No se detecto ninguna mano. Porfavor intenta de nuevo");
 
     // 2. Validar presencia de moneda
     const datosMoneda = this.encontrarMoneda(imagen);
-    if (!datosMoneda.encontrada) {
-      console.warn("Abortado: No se detectó moneda de referencia.");
-      return null;
-    }
+    if (!datosMoneda.encontrada)
+      throw new Error("No se detecto ninguna moneda. Porfavor intenta de nuevo");
 
     // 3. Procesar y extraer medidas (si ambos existen)
     const resultadoProcesamiento = await this.procesarMano(imagen, datosMoneda);
-    if (!resultadoProcesamiento) {
-      console.warn("Abortado: Fallo en el procesamiento de los dedos.");
-      return null;
-    }
-
+    if (!resultadoProcesamiento)
+      throw new Error("Error al procesar los datos. Porfavor intenta de nuevo");
     // 4. Calcular tallas e imprimir en consola
     const tallasFinales = this.pxACM(resultadoProcesamiento.medidas, datosMoneda);
     console.log("Resultados de medición completados:", tallasFinales);

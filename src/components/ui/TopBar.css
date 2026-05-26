@@ -1,30 +1,65 @@
 .bar {
+  position: fixed;
+  top: 0;
+  z-index: 900;
+  left: 0;
+  width: 100vw;
+  box-sizing: border-box; /* Evita desbordamientos por padding */
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: var(--red-deep); 
+  color: var(--red-deep);
   padding: 1rem 1.2rem;
-  background: linear-gradient(to bottom, var(--pink-light), transparent);
 }
+.bar::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, var(--pink-light), transparent);
+  z-index: -1; /* Lo manda por detrás de los botones y el logo */
+  opacity: 1;
+  transition: opacity 0.8s ease; /* Transición exclusiva de opacidad */
+  pointer-events: none; /* Evita que la capa atrape el mouse */
+}
+.bar.is-faded::before {
+  opacity: 0;
+}
+.bar.is-faded {
+  background: transparent;
+}
+
 .logo {
   font-family: var(--display);
   font-weight: bold;
 }
-.logo h1{
-  color : var(--red-deep)
+.logo h1 {
+  font-size: var(--text-h4);
+  margin: 0;
+  color: var(--red-deep);
 }
 .bar-actions {
   display: flex;
   gap: 2rem; /* Separa los íconos uniformemente */
+  opacity: 1;
   align-items: center;
+  transition: opacity 1s ease; /* Suaviza la desaparición de los botones */
 }
+
+.bar.is-faded .bar-actions {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .bar-icon-btn {
   background: none;
   border: none;
   cursor: pointer;
   font-size: 1.25rem;
   padding: 0.5rem;
-  transition: transform 0.2s ease;
+  transition: transform 0.8s ease;
 }
 .bar-icon-btn:hover {
   transform: translateY(-2px); /* Animación sutil al pasar el mouse */

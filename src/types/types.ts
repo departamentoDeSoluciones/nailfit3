@@ -21,5 +21,11 @@ export interface ResultadoProcesamiento {
   medidas: MedicionUna[];
   moneda: MedicionMoneda; // Se inyecta al orquestador principal
 }
-
+export interface RegistroCliente {
+  id: string;
+  nombreCompleto: string; // Simplificado en un solo campo, o divídelo si la DB lo exige
+  usuarioIg?: string; // Basado en tu Form.Input actual
+  fechaMedicion: string; // Se llenará con new Date().toISOString()
+  medidas: ResultadoTalla[]; // Composición pura
+}
 export type UIState = "LOADING" | "IDLE" | "DETECTING" | "ANALYZING" | "DONE" | "ERROR";

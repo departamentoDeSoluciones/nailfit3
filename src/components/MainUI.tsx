@@ -1,24 +1,53 @@
 import { DropBox } from "./ui/DropBox";
 import { Button } from "./ui/Button";
+import { Modal } from "./ui/Modal";
+import { ResultsView } from "./ResultsView";
 import { useState, useEffect } from "react";
 import { useRecognitionEngine } from "../hooks/useRecognitionEngine";
 export const MainUI = () => {
-  const { ejecutarAnalisis, uiState, errorMessage } = useRecognitionEngine();
-
+  const { clearError, ejecutarAnalisis, uiState, errorMessage, tallas } = useRecognitionEngine();
   const [isReady, setIsReady] = useState<HTMLImageElement | null>(null);
+  const showButton = isReady && uiState !== "LOADING" && uiState !== "ANALYZING";
+  const handleCloseError = () => {
+    clearError();
+    setIsReady(null);
+  };
+
+  useEffect(() => {
+    // 1. Apaga la restauración automática del navegador
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+
+    // 2. Obliga a renderizar desde el pixel 0,0
+    window.scrollTo(0, 0);
+  }, []);
 
   useEffect(() => {
     if (uiState === "ERROR") {
       console.error("Fallo en el motor:", errorMessage);
     }
   }, [uiState, errorMessage]);
-
+  if (uiState === "DONE") {
+    return <ResultsView medidas={tallas} />;
+  }
   return (
     <div className="master-container">
-      <DropBox onImageReady={setIsReady} />
-      {isReady && uiState !== "LOADING" && (
-        <Button onClick={() => ejecutarAnalisis(isReady.src)}>Comenzar</Button>
-      )}
+      {uiState === "ERROR" && <Modal message={errorMessage} onClose={handleCloseError} />}
+      <DropBox onImageReady={setIsReady} uiState={uiState} />
+
+      <div
+        className="button-wrapper"
+        style={{
+          paddingTop: "1rem",
+          opacity: showButton ? 1 : 0,
+          width: "50%",
+          pointerEvents: showButton ? "auto" : "none",
+          transition: "opacity 0.3s ease", // Transición suave
+        }}
+      >
+        <Button onClick={() => isReady && ejecutarAnalisis(isReady.src)}>Comenzar</Button>
+      </div>
     </div>
   );
 };
