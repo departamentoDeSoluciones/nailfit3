@@ -48,7 +48,7 @@ export const TopBar = () => {
       {/* Izquierda: Logo Tipográfico */}
       <div className="logo">
         {" "}
-        <h1>MedNails</h1>
+        <h1>NailFit </h1>
       </div>
 
       {/* Derecha: Botones mapeados */}
