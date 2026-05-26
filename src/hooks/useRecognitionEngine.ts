@@ -7,7 +7,7 @@ export function useRecognitionEngine() {
   const [estadoScan, setEstadoScan] = useState<EstadoDeteccion>(EstadoDeteccion.NADA);
   const [errorMessage, setErrorMessage] = useState("");
   const [tallas, setTallas] = useState<ResultadoTalla[]>([]);
-
+  const [imgIsReady, setImgIsReady] = useState<string | null>(null);
   useEffect(() => {
     Medir.init()
       .then(() => setUiState("IDLE"))
@@ -22,6 +22,7 @@ export function useRecognitionEngine() {
     setErrorMessage("");
     setTallas([]);
     setUiState("IDLE");
+    setImgIsReady(null);
   };
 
   const ejecutarAnalisis = async (src: string) => {
@@ -33,8 +34,12 @@ export function useRecognitionEngine() {
         const res = await Medir.analizarTallas(img);
         setTallas(res);
         setUiState("DONE");
-      } catch (error: any) {
-        setErrorMessage(error.message || "No se pudo procesar la imagen");
+      } catch (error) {
+        if (error instanceof Error) {
+          setErrorMessage(error.message);
+        } else {
+          setErrorMessage("Uknown error");
+        }
         setUiState("ERROR");
       }
     };
@@ -43,14 +48,20 @@ export function useRecognitionEngine() {
   const clearError = () => {
     setUiState("IDLE");
   };
+  const onImageReady = (img: string | null) => setImgIsReady(img);
   return {
-    uiState,
-    ejecutarAnalisis,
-    setUiState,
-    estadoScan,
-    errorMessage,
-    resetFlow,
-    tallas,
-    clearError,
+    state: {
+      uiState,
+      estadoScan,
+      errorMessage,
+      tallas,
+      imgIsReady,
+    },
+    actions: {
+      ejecutarAnalisis,
+      resetFlow,
+      clearError,
+      onImageReady,
+    },
   };
 }

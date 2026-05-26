@@ -13,6 +13,11 @@
 .dropbox p {
   color: var(--cream);
   font-size: var(--text-p);
+  text-decoration: underline dashed transparent;
+  transition:
+    text-decoration-color 0.8s ease,
+    text-shadow 0.5s ease;
+  text-shadow: 0 0 0 transparent;
 }
 .dropbox.dragging {
   color: var(--red);
@@ -21,8 +26,22 @@
 }
 .dropbox.dragging p {
   color: var(--cream);
+  text-decoration-color: var(--cream);
+  text-shadow: 0 0.1rem 0.5rem color-mix(in srgb, var(--cream) 40%, transparent);
+}
+.upload-link {
+  cursor: pointer;
+  text-decoration: underline dashed transparent;
+  transition:
+    text-decoration-color 0.8s ease,
+    text-shadow 0.5s ease;
+  text-shadow: 0 0 0 transparent;
 }
 
+.upload-link:hover {
+  text-decoration-color: var(--cream);
+  text-shadow: 0 0.1rem 0.5rem color-mix(in srgb, var(--cream) 40%, transparent);
+}
 .dropbox.loaded {
   box-sizing: border-box;
   animation: transformToCircle 1s ease forwards;

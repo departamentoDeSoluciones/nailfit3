@@ -274,7 +274,7 @@ class medir {
       centroX: 0,
       centroY: 0,
     };
-
+    if (!origen) return resultadoNulo;
     let src = new cv.Mat();
     let isSrcLocal = false;
 

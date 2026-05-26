@@ -2,16 +2,18 @@ import { DropBox } from "./ui/DropBox";
 import { Button } from "./ui/Button";
 import { Modal } from "./ui/Modal";
 import { ResultsView } from "./ResultsView";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useRecognitionEngine } from "../hooks/useRecognitionEngine";
+
 export const MainUI = () => {
-  const { clearError, ejecutarAnalisis, uiState, errorMessage, tallas, resetFlow } =
-    useRecognitionEngine();
-  const [isReady, setIsReady] = useState<HTMLImageElement | null>(null);
-  const showButton = isReady && uiState !== "LOADING" && uiState !== "ANALYZING";
+  const { state, actions } = useRecognitionEngine();
+
+  const showButton =
+    state.imgIsReady && state.uiState !== "LOADING" && state.uiState !== "ANALYZING";
+
   const handleCloseError = () => {
-    clearError();
-    setIsReady(null);
+    actions.clearError();
+    actions.resetFlow();
   };
 
   useEffect(() => {
@@ -20,27 +22,26 @@ export const MainUI = () => {
     }
     window.scrollTo(0, 0);
   }, []);
-
   useEffect(() => {
-    if (uiState === "ERROR") {
-      console.error("Fallo en el motor:", errorMessage);
+    if (state.uiState === "ERROR") {
+      console.error("Fallo en el motor:", state.errorMessage);
     }
-  }, [uiState, errorMessage]);
-  if (uiState === "DONE") {
-    return (
-      <ResultsView
-        medidas={tallas}
-        onReset={() => {
-          resetFlow();
-          setIsReady(null);
-        }}
-      />
-    );
+  }, [state.uiState, state.errorMessage]);
+
+  if (state.uiState === "DONE") {
+    return <ResultsView medidas={state.tallas} onReset={actions.resetFlow} />;
   }
+
   return (
     <div className="master-container">
-      {uiState === "ERROR" && <Modal message={errorMessage} onClose={handleCloseError} />}
-      <DropBox onImageReady={setIsReady} uiState={uiState} />
+      {state.uiState === "ERROR" && (
+        <Modal message={state.errorMessage} onClose={handleCloseError} />
+      )}
+      <DropBox
+        onImageReady={actions.onImageReady}
+        uiState={state.uiState}
+        hasImage={!!state.imgIsReady}
+      />
 
       <div
         className="button-wrapper"
@@ -49,10 +50,12 @@ export const MainUI = () => {
           opacity: showButton ? 1 : 0,
           width: "50%",
           pointerEvents: showButton ? "auto" : "none",
-          transition: "opacity 0.3s ease", // Transición suave
+          transition: "opacity 0.3s ease",
         }}
       >
-        <Button onClick={() => isReady && ejecutarAnalisis(isReady.src)}>Comenzar</Button>
+        <Button onClick={() => state.imgIsReady && actions.ejecutarAnalisis(state.imgIsReady)}>
+          Comenzar
+        </Button>
       </div>
     </div>
   );
