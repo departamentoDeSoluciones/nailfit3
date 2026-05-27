@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Medir } from "../medir"; // Ajusta la ruta a tu medir.ts
+import { Medir, type DebugStep } from "../medir"; // Ajusta la ruta a tu medir.ts
 
 export const Debugger: React.FC = () => {
-  const [images, setImages] = useState<{ indiceDedo: number; base64: string }[]>([]);
+  const [images, setImages] = useState<{ indiceDedo: number; pasos: DebugStep[] }[]>([]);
 
   useEffect(() => {
     // Al montarse, lee lo que medir.ts guardó en memoria
@@ -14,54 +14,36 @@ export const Debugger: React.FC = () => {
   const nombresDedos = ["Pulgar", "Índice", "Medio", "Anular", "Meñique"];
 
   return (
-    <div
-      style={{
-        marginTop: "2rem",
-        padding: "1rem",
-        border: "2px dashed #ff0055",
-        borderRadius: "8px",
-      }}
-    >
-      <h3 style={{ color: "#ff0055", marginBottom: "1rem" }}>🔧 Debugger Visión</h3>
-      <div
-        style={{
-          display: "flex",
-          gap: "1rem",
-          flexWrap: "wrap",
-          justifyContent: "center",
-        }}
-      >
-        {images.map((img) => (
-          <div
-            key={img.indiceDedo}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
-          >
-            <span
-              style={{
-                fontSize: "0.8rem",
-                color: "#888",
-                marginBottom: "0.5rem",
-              }}
-            >
-              {nombresDedos[img.indiceDedo]}
-            </span>
-            <img
-              src={img.base64}
-              alt={`Debug ${img.indiceDedo}`}
-              style={{
-                width: "128px",
-                height: "128px",
-                backgroundColor: "#111",
-                objectFit: "contain",
-              }}
-            />
+    <div>
+      {images.map((dedo) => (
+        <div
+          key={dedo.indiceDedo}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            marginBottom: "2rem",
+          }}
+        >
+          <h4 style={{ color: "white" }}>{nombresDedos[dedo.indiceDedo]}</h4>
+          <div style={{ display: "flex", gap: "1rem" }}>
+            {dedo.pasos?.map((paso, idx) => (
+              <div key={idx} style={{ textAlign: "center" }}>
+                <span style={{ fontSize: "0.7rem", color: "#888" }}>{paso.nombrePaso}</span>
+                <br />
+                <img
+                  src={paso.base64}
+                  alt={paso.nombrePaso}
+                  style={{
+                    width: "100px",
+                    height: "100px",
+                    backgroundColor: "#111",
+                  }}
+                />
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 };

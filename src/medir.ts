@@ -12,9 +12,13 @@ export enum EstadoDeteccion {
   MONEDA = 2,
   AMBAS = 3,
 }
+export interface DebugStep {
+  nombrePaso: string;
+  base64: string;
+}
 
 class medir {
-  public debugImages: { indiceDedo: number; base64: string }[] = [];
+  public debugImages: { indiceDedo: number; pasos: DebugStep[] }[] = [];
   private isReady: boolean = false;
   public handLandmarker: any = null;
   private isInitializing: boolean = false;
@@ -130,7 +134,8 @@ class medir {
   ): { indiceDedo: number; mat: any | null }[] {
     const unasProcesadas: { indiceDedo: number; mat: any | null }[] = [];
 
-    // Uso de for...of para tener la variable 'item' disponible automáticamente
+    this.debugImages = [];
+
     for (const item of arrayDeUnas) {
       if (!item.mat) {
         unasProcesadas.push({ indiceDedo: item.indiceDedo, mat: null });
@@ -147,11 +152,21 @@ class medir {
       const kernel = cv.Mat.ones(5, 5, cv.CV_8U);
 
       try {
+        const pasosActuales: DebugStep[] = [];
         const dsize = new cv.Size(128, 128);
         cv.resize(src, resized, dsize, 0, 0, cv.INTER_AREA);
+        const b64Original = this.matToBase64(resized);
+        if (b64Original)
+          pasosActuales.push({
+            nombrePaso: "1. Original",
+            base64: b64Original,
+          });
         cv.cvtColor(resized, gray, cv.COLOR_RGBA2GRAY, 0);
+        const b64Gray = this.matToBase64(gray);
+        if (b64Gray) pasosActuales.push({ nombrePaso: "2. Gris", base64: b64Gray });
         cv.bilateralFilter(gray, blurred, 9, 75, 75, cv.BORDER_DEFAULT);
-
+        const b64Blur = this.matToBase64(blurred);
+        if (b64Blur) pasosActuales.push({ nombrePaso: "3. Blur", base64: b64Blur });
         cv.adaptiveThreshold(
           blurred,
           thresh,
@@ -161,10 +176,16 @@ class medir {
           11,
           2,
         );
-
+        const b64Thresh = this.matToBase64(thresh);
+        if (b64Thresh) pasosActuales.push({ nombrePaso: "4. Umbral", base64: b64Thresh });
         cv.morphologyEx(thresh, morph, cv.MORPH_CLOSE, kernel);
-
+        const b64Morph = this.matToBase64(morph);
+        if (b64Morph) pasosActuales.push({ nombrePaso: "5. Morfología", base64: b64Morph });
         // Se inserta el objeto con el formato correcto ANTES de limpiar la memoria
+        this.debugImages.push({
+          indiceDedo: item.indiceDedo,
+          pasos: pasosActuales,
+        });
         unasProcesadas.push({
           indiceDedo: item.indiceDedo,
           mat: morph.clone(),
@@ -185,6 +206,99 @@ class medir {
 
     return unasProcesadas;
   }
+
+  public medirUnasPixeles(
+    arrayDeUnasProcesadas: { indiceDedo: number; mat: any | null }[],
+  ): MedicionUna[] {
+    const medidasJSON: MedicionUna[] = [];
+
+    for (const item of arrayDeUnasProcesadas) {
+      if (!item.mat) {
+        medidasJSON.push({
+          indiceDedo: item.indiceDedo,
+          nailWidth: 0,
+          nailHeight: 0,
+          valido: false,
+        });
+        continue;
+      }
+
+      const src = item.mat.clone(); // Matriz binaria (GRAY)
+      const contours = new cv.MatVector();
+      const hierarchy = new cv.Mat();
+      let measurements: MedicionUna | null = null;
+
+      // --- 1. LOCALIZAR LA ENTRADA DE DEBUG EXISTENTE ---
+      let fingerDebug = this.debugImages.find((d) => d.indiceDedo === item.indiceDedo);
+
+      try {
+        cv.findContours(src, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+
+        let maxArea = 0;
+        let maxIndex = -1;
+
+        for (let i = 0; i < contours.size(); ++i) {
+          let area = cv.contourArea(contours.get(i));
+          if (area > maxArea) {
+            maxArea = area;
+            maxIndex = i;
+          }
+        }
+
+        if (maxIndex !== -1 && maxArea > 20) {
+          // Encontramos la uña
+          const maxContour = contours.get(maxIndex);
+          const rect = cv.minAreaRect(maxContour);
+
+          const width = rect.size.width < rect.size.height ? rect.size.width : rect.size.height;
+          const height = rect.size.width < rect.size.height ? rect.size.height : rect.size.width;
+
+          measurements = {
+            indiceDedo: item.indiceDedo,
+            nailWidth: parseFloat(width.toFixed(2)),
+            nailHeight: parseFloat(height.toFixed(2)),
+            valido: true,
+          };
+          medidasJSON.push(measurements);
+          // --- 2. GENERAR IMAGEN HIGHLIGHT (VERDE) ---
+          // Crear una matriz de color temporal basada en la morph mask
+          const colorMask = new cv.Mat();
+          cv.cvtColor(item.mat, colorMask, cv.COLOR_GRAY2BGR, 0); // Convertir binario GRAY a BGR
+
+          // Dibujar el contorno rellenado en VERDE. Scalar [B, G, R, A]. Verde es [0, 255, 0].
+          // Grosor: -1 (cv.FILLED) rellena el contorno.
+          cv.drawContours(
+            colorMask,
+            contours,
+            maxIndex,
+            [0, 255, 0, 255], // Color Verde
+            -1, // Thickness: -1 Rellena
+            cv.LINE_8,
+            hierarchy,
+            0,
+          );
+
+          // Convertir a Base64
+          const b64Highlighted = this.matToBase64(colorMask);
+          colorMask.delete(); // Limpieza inmediata de memoria OpenCV
+
+          // --- 3. INYECTAR EN EL HISTORIAL EXISTENTE DE DEBUG ---
+          if (fingerDebug && fingerDebug.pasos && b64Highlighted) {
+            fingerDebug.pasos.push({
+              nombrePaso: "6. Contorno Medido (Verde)",
+              base64: b64Highlighted,
+            });
+          }
+        }
+      } catch (error) {
+        console.error(`Error medido contornos del dedo ${item.indiceDedo}:`, error);
+      }
+      // ... resto del cleanup ...
+    }
+
+    return medidasJSON;
+  }
+
   public async procesarMano(
     fotoDeMano: HTMLImageElement,
     datosMoneda: MedicionMoneda,
@@ -196,17 +310,6 @@ class medir {
     const medidasJSON: MedicionUna[] = this.medirUnasPixeles(roisProcesadosMat);
     for (const item of roisCrudosMat) {
       if (item.mat && !item.mat.isDeleted()) item.mat.delete();
-    }
-
-    this.debugImages = []; // Limpiar debug anterior
-
-    for (const item of roisProcesadosMat) {
-      if (item.mat && !item.mat.isDeleted()) {
-        const b64 = this.matToBase64(item.mat);
-        if (b64) {
-          this.debugImages.push({ indiceDedo: item.indiceDedo, base64: b64 });
-        }
-      }
     }
 
     for (const item of roisProcesadosMat) {
@@ -224,84 +327,6 @@ class medir {
     if (!this.handLandmarker) throw new Error("MediaPipe no inicializado");
     const results = await this.handLandmarker.detect(imgOrigen);
     return results && results.landmarks && results.landmarks.length > 0;
-  }
-  public medirUnasPixeles(
-    unasProcesadasMat: { indiceDedo: number; mat: any | null }[],
-  ): MedicionUna[] {
-    const resultados: MedicionUna[] = [];
-
-    for (const item of unasProcesadasMat) {
-      // 1. Validar si el dedo existe en este slot
-      if (!item.mat) {
-        resultados.push({
-          indiceDedo: item.indiceDedo,
-          anchoPixeles: 0,
-          altoPixeles: 0,
-          areaPixeles: 0,
-          valido: false,
-        });
-        continue;
-      }
-
-      const src = item.mat;
-      const contours = new cv.MatVector();
-      const hierarchy = new cv.Mat();
-
-      try {
-        // 2. Extraer contornos externos
-        cv.findContours(src, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
-
-        if (contours.size() === 0) {
-          resultados.push({
-            indiceDedo: item.indiceDedo,
-            anchoPixeles: 0,
-            altoPixeles: 0,
-            areaPixeles: 0,
-            valido: false,
-          });
-          continue;
-        }
-
-        // 3. Filtrar el contorno con la mayor área
-        let mayorArea = 0;
-        let mejorContorno = contours.get(0);
-
-        for (let j = 0; j < contours.size(); ++j) {
-          const cnt = contours.get(j);
-          const area = cv.contourArea(cnt);
-          if (area > mayorArea) {
-            mayorArea = area;
-            mejorContorno = cnt;
-          }
-        }
-
-        // 4. Obtener caja delimitadora (Bounding Box)
-        const rect = cv.boundingRect(mejorContorno);
-
-        resultados.push({
-          indiceDedo: item.indiceDedo,
-          anchoPixeles: rect.width,
-          altoPixeles: rect.height,
-          areaPixeles: mayorArea,
-          valido: true,
-        });
-      } catch (error) {
-        console.error(`Error midiendo el dedo ${item.indiceDedo}:`, error);
-        resultados.push({
-          indiceDedo: item.indiceDedo,
-          anchoPixeles: 0,
-          altoPixeles: 0,
-          areaPixeles: 0,
-          valido: false,
-        });
-      } finally {
-        // 5. Destruir los vectores de memoria obligatoriamente
-        if (contours && !contours.isDeleted()) contours.delete();
-        if (hierarchy && !hierarchy.isDeleted()) hierarchy.delete();
-      }
-    }
-
-    return resultados;
   }
 
   public encontrarMoneda(origen: HTMLImageElement | HTMLCanvasElement | null): MedicionMoneda {
