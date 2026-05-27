@@ -1,4 +1,5 @@
 import React from "react";
+import { Button } from "./Button";
 import type { ResultadoTalla } from "../../types/types";
 import "./ResultsTable.css";
 
@@ -20,10 +21,22 @@ export const ResultsTable: React.FC<MeasurementsTableProps> = ({ medidas = [] })
         </thead>
         <tbody>
           {medidas.map((item, index) => (
-            <tr key={index}>
+            <tr key={index} className={item.valido ? "" : "row-error"}>
               <td className="finger-name">{item.nombreDedo}</td>
-              <td className="finger-value">{item.anchoCm} cm</td>
-              <td className="finger-size font-bold">{item.talla}</td>
+
+              {/* Celda de Medida: Condicional */}
+              <td className="finger-value">{item.valido ? `${item.anchoCm} cm` : "--"}</td>
+
+              {/* Celda de Talla: Condicional */}
+              <td className="finger-size font-bold">
+                {item.valido ? (
+                  item.talla
+                ) : (
+                  <Button onClick={() => console.log(`Acción manual para ${item.nombreDedo}`)}>
+                    Ingresar
+                  </Button>
+                )}
+              </td>
             </tr>
           ))}
         </tbody>

@@ -30,6 +30,9 @@
   letter-spacing: 0.05em;
   font-size: var(--text-p);
 }
+.row-error {
+  background: var(--pink);
+}
 .measurements-table td {
   border-bottom: 1px solid var(--pink);
   font-size: 0.95rem;

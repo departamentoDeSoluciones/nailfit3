@@ -12,7 +12,6 @@ export const MainUI = () => {
     state.imgIsReady && state.uiState !== "LOADING" && state.uiState !== "ANALYZING";
 
   const handleCloseError = () => {
-    actions.clearError();
     actions.resetFlow();
   };
 

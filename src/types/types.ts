@@ -3,6 +3,7 @@ export interface ResultadoTalla {
   anchoCm: number;
   altoCm: number;
   talla: string;
+  valido: boolean;
 }
 export interface MedicionUna {
   indiceDedo: number;

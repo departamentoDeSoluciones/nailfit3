@@ -1,6 +1,8 @@
 .modal-overlay {
   position: fixed;
   inset: 0;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(5px);
   background-color: rgba(0, 0, 0, 0.4); /* Oscurece el fondo */
   display: flex;
   justify-content: center;

@@ -1,4 +1,5 @@
 import { Form } from "./ui/Form";
+import { Debugger } from "./Debugger";
 import { ResultsTable } from "./ui/ResultsTable";
 import { Button } from "./ui/Button";
 import type { ResultadoTalla, RegistroCliente } from "../types/types";
@@ -58,6 +59,8 @@ export const ResultsView: React.FC<MeasurementsTableProps> = ({ medidas = [], on
       </div>
       <Button onClick={() => console.log("trying")}>⬇ Exportar como Imagen</Button>
       <Button onClick={onReset}> Nueva Captura </Button>
+
+      <Debugger />
     </div>
   );
 };

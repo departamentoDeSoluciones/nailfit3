@@ -14,6 +14,7 @@ export enum EstadoDeteccion {
 }
 
 class medir {
+  public debugImages: { indiceDedo: number; base64: string }[] = [];
   private isReady: boolean = false;
   public handLandmarker: any = null;
   private isInitializing: boolean = false;
@@ -49,81 +50,95 @@ class medir {
       this.isInitializing = false;
     }
   }
-  public async capturarDedos(img: HTMLImageElement): Promise<any[]> {
+
+  public async capturarDedos(
+    img: HTMLImageElement,
+    indicesRequeridos?: number[],
+  ): Promise<{ indiceDedo: number; mat: any | null }[]> {
     const results = await this.handLandmarker.detect(img);
-    const roiMat: any[] = [];
-    if (!results || results.landmarks === 0) {
+    const roiMats: { indiceDedo: number; mat: any | null }[] = [];
+
+    if (!results || results.landmarks.length === 0) {
       console.warn("No se detectaron manos en la imagen.");
-      return roiMat;
+      return roiMats; // Vacío
     }
+
     const src = cv.imread(img);
     const width = img.naturalWidth;
     const height = img.naturalHeight;
-    const dedos = [
-      { dip: 3, tip: 4 }, // Pulgar
-      { dip: 7, tip: 8 }, // Índice
-      { dip: 11, tip: 12 }, // Medio
-      { dip: 15, tip: 16 }, // Anular
-      { dip: 19, tip: 20 }, // Meñique
-    ];
     const mano = results.landmarks[0];
     let dedosValidos = 0;
 
-    for (const puntos of dedos) {
+    // SÍ mantienes las coordenadas matemáticas
+    const dedos = [
+      { dip: 3, tip: 4 }, // i = 0 (Pulgar)
+      { dip: 7, tip: 8 }, // i = 1 (Índice)
+      { dip: 11, tip: 12 }, // i = 2 (Medio)
+      { dip: 15, tip: 16 }, // i = 3 (Anular)
+      { dip: 19, tip: 20 }, // i = 4 (Meñique)
+    ];
+
+    // Bucle con 'let i' para saber EXACTAMENTE qué dedo estamos evaluando
+    for (let i = 0; i < dedos.length; i++) {
+      if (indicesRequeridos && !indicesRequeridos.includes(i)) continue;
+      const puntos = dedos[i];
       const dip = mano[puntos.dip];
       const tip = mano[puntos.tip];
 
-      // Convertir a coordenadas absolutas en píxeles
       const pxTipX = tip.x * width;
       const pxTipY = tip.y * height;
       const pxDipX = dip.x * width;
       const pxDipY = dip.y * height;
 
-      // Calcular distancia entre articulación y punta
       const dx = pxTipX - pxDipX;
       const dy = pxTipY - pxDipY;
       const distancia = Math.sqrt(dx * dx + dy * dy);
 
-      // Calcular el tamaño del cuadrado de recorte con margen (200% de la distancia)
       const boxSize = distancia * 1.55;
       const halfBox = boxSize / 2;
 
-      // Desplazar el centro del recorte ligeramente hacia abajo (hacia el nudillo)
-      // para asegurar que toda la base de la uña (cutícula) entre en el cuadro.
       const cx = pxTipX;
       const cy = pxTipY + distancia * 0.4;
 
-      // Coordenadas de la esquina superior izquierda
       const rx = Math.max(0, cx - halfBox);
       const ry = Math.max(0, cy - halfBox);
       let rw = boxSize;
       let rh = boxSize;
 
-      // Clamping para evitar salir de los límites de la imagen original
       if (rx + rw > width) rw = width - rx;
       if (ry + rh > height) rh = height - ry;
 
-      // Si el rectángulo es válido, recortar
+      // Si el recorte es válido, guardamos la imagen y SU ÍNDICE (i)
       if (rw > 0 && rh > 0) {
         const rect = new cv.Rect(Math.floor(rx), Math.floor(ry), Math.floor(rw), Math.floor(rh));
-        // Usar .clone() para aislar la memoria de la matriz resultante
         const roi = src.roi(rect).clone();
-        roiMat.push(roi);
+        roiMats.push({ indiceDedo: i, mat: roi });
         dedosValidos++;
+      } else {
+        // Si falló (ej. dedo fuera de la foto), guardamos un NULL pero conservamos el índice (i)
+        roiMats.push({ indiceDedo: i, mat: null });
       }
     }
 
-    console.log(`Dedos válidos detectados: ${dedosValidos}`);
+    console.log(`Dedos válidos detectados: ${dedosValidos}/5`);
     src.delete();
-    return roiMat;
+    return roiMats;
   }
 
-  public procesarDedos(arrayDeUnas: any[]): any[] {
-    const unasProcesadas: any[] = [];
+  public procesarDedos(
+    arrayDeUnas: { indiceDedo: number; mat: any | null }[],
+  ): { indiceDedo: number; mat: any | null }[] {
+    const unasProcesadas: { indiceDedo: number; mat: any | null }[] = [];
 
-    for (let i = 0; i < arrayDeUnas.length; i++) {
-      const src = arrayDeUnas[i]; // Mat original del ROI
+    // Uso de for...of para tener la variable 'item' disponible automáticamente
+    for (const item of arrayDeUnas) {
+      if (!item.mat) {
+        unasProcesadas.push({ indiceDedo: item.indiceDedo, mat: null });
+        continue;
+      }
 
+      // Declarar src a partir del item actual
+      const src = item.mat;
       const resized = new cv.Mat();
       const gray = new cv.Mat();
       const blurred = new cv.Mat();
@@ -132,17 +147,11 @@ class medir {
       const kernel = cv.Mat.ones(5, 5, cv.CV_8U);
 
       try {
-        // 1. Estandarizar resolución (128x128) para homogeneizar el algoritmo
         const dsize = new cv.Size(128, 128);
         cv.resize(src, resized, dsize, 0, 0, cv.INTER_AREA);
-
-        // 2. Escala de grises
         cv.cvtColor(resized, gray, cv.COLOR_RGBA2GRAY, 0);
-
-        // 3. Suavizado bilateral
         cv.bilateralFilter(gray, blurred, 9, 75, 75, cv.BORDER_DEFAULT);
 
-        // 4. Umbralización adaptativa (INV para que la uña sea blanca y fondo negro)
         cv.adaptiveThreshold(
           blurred,
           thresh,
@@ -153,15 +162,18 @@ class medir {
           2,
         );
 
-        // 5. Cierre morfológico
         cv.morphologyEx(thresh, morph, cv.MORPH_CLOSE, kernel);
 
-        // 6. Guardar clon en el array de salida
-        unasProcesadas.push(morph.clone());
+        // Se inserta el objeto con el formato correcto ANTES de limpiar la memoria
+        unasProcesadas.push({
+          indiceDedo: item.indiceDedo,
+          mat: morph.clone(),
+        });
       } catch (error) {
-        console.error(`Error procesando recorte del dedo ${i}:`, error);
+        console.error(`Error procesando recorte del dedo ${item.indiceDedo}:`, error);
+        // Si OpenCV falla en este dedo, pasamos un null para mantener la cadena
+        unasProcesadas.push({ indiceDedo: item.indiceDedo, mat: null });
       } finally {
-        // Limpiar memoria temporal de esta iteración estricamente
         if (!resized.isDeleted()) resized.delete();
         if (!gray.isDeleted()) gray.delete();
         if (!blurred.isDeleted()) blurred.delete();
@@ -173,7 +185,6 @@ class medir {
 
     return unasProcesadas;
   }
-
   public async procesarMano(
     fotoDeMano: HTMLImageElement,
     datosMoneda: MedicionMoneda,
@@ -183,11 +194,23 @@ class medir {
 
     const roisProcesadosMat = this.procesarDedos(roisCrudosMat);
     const medidasJSON: MedicionUna[] = this.medirUnasPixeles(roisProcesadosMat);
-    for (const rawMat of roisCrudosMat) {
-      if (rawMat && !rawMat.isDeleted()) rawMat.delete();
+    for (const item of roisCrudosMat) {
+      if (item.mat && !item.mat.isDeleted()) item.mat.delete();
     }
-    for (const rawMats of roisProcesadosMat) {
-      if (rawMats && !rawMats.isDeleted()) rawMats.delete();
+
+    this.debugImages = []; // Limpiar debug anterior
+
+    for (const item of roisProcesadosMat) {
+      if (item.mat && !item.mat.isDeleted()) {
+        const b64 = this.matToBase64(item.mat);
+        if (b64) {
+          this.debugImages.push({ indiceDedo: item.indiceDedo, base64: b64 });
+        }
+      }
+    }
+
+    for (const item of roisProcesadosMat) {
+      if (item.mat && !item.mat.isDeleted()) item.mat.delete();
     }
     return {
       medidas: medidasJSON,
@@ -202,21 +225,35 @@ class medir {
     const results = await this.handLandmarker.detect(imgOrigen);
     return results && results.landmarks && results.landmarks.length > 0;
   }
-  public medirUnasPixeles(unasProcesadasMat: any[]): MedicionUna[] {
+  public medirUnasPixeles(
+    unasProcesadasMat: { indiceDedo: number; mat: any | null }[],
+  ): MedicionUna[] {
     const resultados: MedicionUna[] = [];
 
-    for (let i = 0; i < unasProcesadasMat.length; i++) {
-      const src = unasProcesadasMat[i];
+    for (const item of unasProcesadasMat) {
+      // 1. Validar si el dedo existe en este slot
+      if (!item.mat) {
+        resultados.push({
+          indiceDedo: item.indiceDedo,
+          anchoPixeles: 0,
+          altoPixeles: 0,
+          areaPixeles: 0,
+          valido: false,
+        });
+        continue;
+      }
+
+      const src = item.mat;
       const contours = new cv.MatVector();
       const hierarchy = new cv.Mat();
 
       try {
-        // 1. Extraer contornos externos
+        // 2. Extraer contornos externos
         cv.findContours(src, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
 
         if (contours.size() === 0) {
           resultados.push({
-            indiceDedo: i,
+            indiceDedo: item.indiceDedo,
             anchoPixeles: 0,
             altoPixeles: 0,
             areaPixeles: 0,
@@ -225,7 +262,7 @@ class medir {
           continue;
         }
 
-        // 2. Filtrar el contorno con la mayor área
+        // 3. Filtrar el contorno con la mayor área
         let mayorArea = 0;
         let mejorContorno = contours.get(0);
 
@@ -238,27 +275,27 @@ class medir {
           }
         }
 
-        // 3. Obtener distancias
+        // 4. Obtener caja delimitadora (Bounding Box)
         const rect = cv.boundingRect(mejorContorno);
 
         resultados.push({
-          indiceDedo: i,
+          indiceDedo: item.indiceDedo,
           anchoPixeles: rect.width,
           altoPixeles: rect.height,
           areaPixeles: mayorArea,
           valido: true,
         });
       } catch (error) {
-        console.error(`Error midiendo el dedo ${i}:`, error);
+        console.error(`Error midiendo el dedo ${item.indiceDedo}:`, error);
         resultados.push({
-          indiceDedo: i,
+          indiceDedo: item.indiceDedo,
           anchoPixeles: 0,
           altoPixeles: 0,
           areaPixeles: 0,
           valido: false,
         });
       } finally {
-        // 4. Destruir los vectores de memoria obligatoriamente
+        // 5. Destruir los vectores de memoria obligatoriamente
         if (contours && !contours.isDeleted()) contours.delete();
         if (hierarchy && !hierarchy.isDeleted()) hierarchy.delete();
       }
@@ -340,16 +377,22 @@ class medir {
       console.warn("Análisis omitido: No hay moneda para escalar.");
       return [];
     }
-
-    // Moneda de 10 pesos MXN = 28 mm = 2.8 cm
     const diametroMonedaCm = 2.8;
     const diametroMonedaPx = moneda.radioPixeles * 2;
     const factorConversion = diametroMonedaCm / diametroMonedaPx;
     const nombresDedos = ["Pulgar", "Índice", "Medio", "Anular", "Meñique"];
     const resultados: ResultadoTalla[] = [];
-
     for (const dedo of medidasDedos) {
-      if (!dedo.valido) continue;
+      if (!dedo.valido) {
+        resultados.push({
+          nombreDedo: nombresDedos[dedo.indiceDedo] || `Dedo ${dedo.indiceDedo}`,
+          anchoCm: 0,
+          altoCm: 0,
+          talla: "Faltante", // O N/A
+          valido: false,
+        });
+        continue;
+      }
       const anchoCm = dedo.anchoPixeles * factorConversion;
       const altoCm = dedo.altoPixeles * factorConversion;
       const anchoMm = anchoCm * 10;
@@ -365,12 +408,12 @@ class medir {
       else if (anchoMm >= 10) talla = "7";
       else if (anchoMm >= 9) talla = "8";
       else talla = "9";
-
       resultados.push({
         nombreDedo: nombresDedos[dedo.indiceDedo] || `Dedo ${dedo.indiceDedo}`,
         anchoCm: parseFloat(anchoCm.toFixed(2)),
         altoCm: parseFloat(altoCm.toFixed(2)),
         talla: talla,
+        valido: true,
       });
     }
     return resultados;
@@ -395,6 +438,71 @@ class medir {
     console.log("Resultados de medición completados:", tallasFinales);
 
     return tallasFinales;
+  }
+
+  public async analizarDedosEspecificos(
+    imagen: HTMLImageElement,
+    indicesFaltantes: number[],
+  ): Promise<ResultadoTalla[]> {
+    if (!indicesFaltantes || indicesFaltantes.length === 0) return [];
+
+    const hayMano = await this.detectarManoRapido(imagen);
+    if (!hayMano) throw new Error("No se detectó mano en la nueva imagen.");
+
+    const datosMoneda = this.encontrarMoneda(imagen);
+    if (!datosMoneda.encontrada) throw new Error("No se detectó moneda en la nueva imagen.");
+
+    // Pasamos el arreglo al método modificado
+    const roisCrudosMat = await this.capturarDedos(imagen, indicesFaltantes);
+    if (!roisCrudosMat || roisCrudosMat.length === 0)
+      throw new Error("Error extrayendo los dedos específicos.");
+
+    const roisProcesadosMat = this.procesarDedos(roisCrudosMat);
+    const medidasJSON: MedicionUna[] = this.medirUnasPixeles(roisProcesadosMat);
+
+    // Limpieza de memoria
+    for (const item of roisCrudosMat) if (item.mat && !item.mat.isDeleted()) item.mat.delete();
+    for (const item of roisProcesadosMat) if (item.mat && !item.mat.isDeleted()) item.mat.delete();
+
+    // pxACM ya itera solo sobre los dedos que traen el objeto MedicionUna
+    const tallasFinales = this.pxACM(medidasJSON, datosMoneda);
+
+    return tallasFinales;
+  }
+
+  private matToBase64(mat: any): string | null {
+    if (!mat || mat.isDeleted()) return null;
+    const canvas = document.createElement("canvas");
+    try {
+      cv.imshow(canvas, mat);
+      return canvas.toDataURL("image/png");
+    } catch (e) {
+      return null;
+    }
+  }
+
+  public async generarImagenesDebug(
+    imagen: HTMLImageElement,
+  ): Promise<{ indiceDedo: number; base64: string }[]> {
+    const roisCrudos = await this.capturarDedos(imagen);
+    const roisProcesados = this.procesarDedos(roisCrudos);
+
+    const debugImages: { indiceDedo: number; base64: string }[] = [];
+
+    for (const item of roisProcesados) {
+      if (item.mat) {
+        const base64Str = this.matToBase64(item.mat);
+        if (base64Str) {
+          debugImages.push({ indiceDedo: item.indiceDedo, base64: base64Str });
+        }
+      }
+    }
+
+    // Limpiar memoria
+    for (const item of roisCrudos) if (item.mat && !item.mat.isDeleted()) item.mat.delete();
+    for (const item of roisProcesados) if (item.mat && !item.mat.isDeleted()) item.mat.delete();
+
+    return debugImages;
   }
 }
 export const Medir = new medir();
