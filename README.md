@@ -11,10 +11,10 @@ Para comenzar a trabajar en local, asegúrate de tener [Node.js](https://nodejs.
 
    ```bash
    npm install
-   # o usando pnpm: pnpm install
-   Scripts de Desarrollo
-   El proyecto utiliza Vite como entorno de construcción. Puedes usar los siguientes scripts:
    ```
+
+Scripts de Desarrollo
+El proyecto utiliza Vite como entorno de construcción. Puedes usar los siguientes scripts:
 
 npm run dev: Inicia el servidor de desarrollo local con Hot Module Replacement (HMR).
 
